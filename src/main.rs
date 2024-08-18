@@ -3,13 +3,14 @@ use log::{debug, info};
 use reqwest;
 use std::env;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let domain_name = env::var("DOMAIN_NAME").unwrap_or("swisstech.ca".to_string());
     let api_key = env::var("DO_API_KEY").expect("DO_API_KEY not set.");
     let client = DigitalOcean::new(api_key).unwrap();
 
     // Fetch the IP address
-    let ip = get_ip().expect("Could not discover IP Address");
+    let ip = get_ip().await.expect("Could not discover IP Address");
 
     // print out the ip
     println!("Discovered IP: {}", ip);
@@ -56,11 +57,12 @@ fn main() {
     println!("Done!");
 }
 
-fn get_ip() -> Result<String, Box<dyn std::error::Error>> {
+async fn get_ip() -> Result<String, Box<dyn std::error::Error>> {
     let client = reqwest::Client::new();
-    let req = client.get("https://ipinfo.io/ip");
-    let mut resp = req.send()?;
-    let text = resp.text()?;
-    info!("IP ADDRESS: {:?}", text);
-    Ok(text)
+    let resp = client.get("https://ipinfo.io/ip")
+        .send()
+        .await?;
+    let resp_text = resp.text().await?;
+    info!("IP ADDRESS: {:?}", resp_text);
+    Ok(resp_text)
 }
